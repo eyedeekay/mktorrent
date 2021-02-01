@@ -60,7 +60,7 @@ func MakeTorrent(file string, name string, url string, ann ...string) (*Torrent,
 			CreationDate: time.Now().Unix(),
 			CreatedBy:    "mktorrent.go",
 			Info: InfoDict{
-				Name: name,
+				Name:  name,
 				Files: []InfoDict{},
 			},
 			UrlList: url,
@@ -73,32 +73,35 @@ func MakeTorrent(file string, name string, url string, ann ...string) (*Torrent,
 		err := filepath.Walk(file,
 			func(path string, info os.FileInfo, err error) error {
 
-				if !info.IsDir() {
-					b := make([]byte, piece_len)
-					r, err := os.Open(path)
-					if err != nil {
-						return err
-					}
-				  if len(t.Info.Files) <= i {
-					  t.Info.Files = append(t.Info.Files, InfoDict{})
-					  i++
-				  }
-					for {
-						log.Println("Adding File", path)
-						n, err := io.ReadFull(r, b)
-						if err != nil && err != io.ErrUnexpectedEOF {
+				if name+".torrent" != path {
+					if !info.IsDir() {
+						b := make([]byte, piece_len)
+						r, err := os.Open(path)
+						if err != nil {
 							return err
 						}
-						if err == io.ErrUnexpectedEOF {
-							b = b[:n]
-							t.Info.Files[i-1].Pieces += string(hashPiece(b))
-							t.Info.Files[i-1].Length += n
-							break
-						} else if n == piece_len {
-							t.Info.Files[i-1].Pieces += string(hashPiece(b))
-							t.Info.Files[i-1].Length += n
-						} else {
-							panic("short read!")
+
+						if len(t.Info.Files) <= i {
+							t.Info.Files = append(t.Info.Files, InfoDict{})
+							i++
+						}
+						for {
+							log.Println("Adding File", path)
+							n, err := io.ReadFull(r, b)
+							if err != nil && err != io.ErrUnexpectedEOF {
+								return err
+							}
+							if err == io.ErrUnexpectedEOF {
+								b = b[:n]
+								t.Info.Files[i-1].Pieces += string(hashPiece(b))
+								t.Info.Files[i-1].Length += n
+								break
+							} else if n == piece_len {
+								t.Info.Files[i-1].Pieces += string(hashPiece(b))
+								t.Info.Files[i-1].Length += n
+							} else {
+								panic("short read!")
+							}
 						}
 					}
 				}
