@@ -54,6 +54,15 @@ func IsDirectory(path string) (bool, error) {
 	return fileInfo.IsDir(), err
 }
 
+func PopDir(path string) []string{
+  a := strings.Split(path, "/")
+  _, a = a[0], a[1:]
+  for _, b := a {
+    log.Println(b)
+  }
+  return a
+}
+
 func MakeTorrent(file string, name string, url string, ann ...string) (*Torrent, error) {
 	dir, err := IsDirectory(file)
 	if err != nil {
@@ -100,14 +109,14 @@ func MakeTorrent(file string, name string, url string, ann ...string) (*Torrent,
 							}
 							if err == io.ErrUnexpectedEOF {
 								b = b[:n]
-								t.Info.Files[i-1].Path = filepath.SplitList(path)[1:]
+								t.Info.Files[i-1].Path = PopDir(path)
 								t.Info.Files[i-1].Length += n
 								t.Info.Pieces += string(hashPiece(b))
 								//								t.Info.Length += n
 								//								t.Info.Files[i-1].PieceLength += piece_len
 								break
 							} else if n == piece_len {
-								t.Info.Files[i-1].Path = filepath.SplitList(path)[1:]
+								t.Info.Files[i-1].Path = PopDir(path)
 								t.Info.Files[i-1].Length += n
 								t.Info.Pieces += string(hashPiece(b))
 
