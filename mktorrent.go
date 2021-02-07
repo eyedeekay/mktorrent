@@ -13,9 +13,9 @@ import (
 const piece_len = 512000
 
 type InfoDict struct {
-	Name        string     `bencode:"name"`
+	Name        string     `bencode:"name,omitempty"`
 	Length      int        `bencode:"length,omitempty"`
-	PieceLength int        `bencode:"piece length,omitempty"`
+	PieceLength int        `bencode:"piece-length,omitempty"`
 	Pieces      string     `bencode:"pieces,omitempty"`
 	Files       []InfoDict `bencode:"files,omitempty"`
 }
