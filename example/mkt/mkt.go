@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	//"github.com/eyedeekay/mktorrent"
 	"github.com/eyedeekay/mktorrent"
 	"io/ioutil"
 	"net/http"
@@ -19,7 +20,7 @@ func main() {
 		flag.Usage()
 		os.Exit(1)
 	}
-//	log.Println("",*u)
+	//	log.Println("",*u)
 	filename := *u
 	//	res := &http.Response{}
 	if strings.HasPrefix(*u, "http") {

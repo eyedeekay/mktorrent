@@ -12,12 +12,17 @@ import (
 
 const piece_len = 512000
 
+type File struct {
+	Path   []string `bencode:"path,omitempty"`
+	Length int      `bencode:"length,omitempty"`
+}
+
 type InfoDict struct {
-	Name        string     `bencode:"name,omitempty"`
-	Length      int        `bencode:"length,omitempty"`
-	PieceLength int        `bencode:"piece-length,omitempty"`
-	Pieces      string     `bencode:"pieces,omitempty"`
-	Files       []InfoDict `bencode:"files,omitempty"`
+	Name        string `bencode:"name"`
+	PieceLength int    `bencode:"piece length,omitempty"`
+	Length      int    `bencode:"length,omitempty"`
+	Pieces      string `bencode:"pieces,omitempty"`
+	Files       []File `bencode:"files,omitempty"`
 }
 
 type Torrent struct {
@@ -60,8 +65,9 @@ func MakeTorrent(file string, name string, url string, ann ...string) (*Torrent,
 			CreationDate: time.Now().Unix(),
 			CreatedBy:    "mktorrent.go",
 			Info: InfoDict{
-				Name:  name,
-				Files: []InfoDict{},
+				Name:        file,
+				PieceLength: piece_len,
+				Files:       []File{},
 			},
 			UrlList: url,
 		}
@@ -82,23 +88,30 @@ func MakeTorrent(file string, name string, url string, ann ...string) (*Torrent,
 						}
 
 						if len(t.Info.Files) <= i {
-							t.Info.Files = append(t.Info.Files, InfoDict{})
+							t.Info.Files = append(t.Info.Files, File{})
 							i++
 						}
 						for {
-							log.Println("Adding File", path)
+							log.Println("Adding File", path, "info", info.Name())
 							n, err := io.ReadFull(r, b)
 							if err != nil && err != io.ErrUnexpectedEOF {
 								return err
 							}
 							if err == io.ErrUnexpectedEOF {
 								b = b[:n]
-								t.Info.Files[i-1].Pieces += string(hashPiece(b))
+								t.Info.Files[i-1].Path = filepath.SplitList(path)
 								t.Info.Files[i-1].Length += n
+								t.Info.Pieces += string(hashPiece(b))
+								//								t.Info.Length += n
+								//								t.Info.Files[i-1].PieceLength += piece_len
 								break
 							} else if n == piece_len {
-								t.Info.Files[i-1].Pieces += string(hashPiece(b))
+								t.Info.Files[i-1].Path = filepath.SplitList(path)
 								t.Info.Files[i-1].Length += n
+								t.Info.Pieces += string(hashPiece(b))
+
+								//								t.Info.Length += n
+								//								t.Info.Files[i-1].PieceLength += piece_len
 							} else {
 								panic("short read!")
 							}
