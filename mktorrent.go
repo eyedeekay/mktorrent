@@ -3,15 +3,16 @@ package mktorrent
 import (
 	"crypto/sha1"
 	"github.com/zeebo/bencode"
+	"hash"
 	"io"
 	"log"
 	"os"
 	"path/filepath"
-	"time"
 	"strings"
+	"time"
 )
 
-const piece_len = 262144
+const piece_len = 32768
 
 type File struct {
 	Path   []string `bencode:"path,omitempty"`
@@ -42,7 +43,6 @@ func (t *Torrent) Save(w io.Writer) error {
 }
 
 func hashPiece(b []byte) []byte {
-	h := sha1.New()
 	h.Write(b)
 	return h.Sum(nil)
 }
@@ -54,44 +54,62 @@ func IsDirectory(path string) (bool, error) {
 	return fileInfo.IsDir(), err
 }
 
-func PopDir(path string) []string{
-  a := strings.Split(path, "/")
-  _, a = a[0], a[1:]
-  for _, b := range a {
-    log.Println(b)
-  }
-  return a
+func PopDir(path string) []string {
+	a := strings.Split(path, "/")
+	_, a = a[0], a[1:]
+	//  for _, b := range a {
+	//    log.Println(b)
+	//  }
+	return a
 }
+
+var h hash.Hash
 
 func MakeTorrent(file string, name string, url string, ann ...string) (*Torrent, error) {
 	dir, err := IsDirectory(file)
 	if err != nil {
 		return nil, err
 	}
+	h = sha1.New()
 	if dir {
-		log.Println("Creating directory torrent")
-		t := &Torrent{
-			AnnounceList: make([][]string, 0),
-			CreationDate: time.Now().Unix(),
-			CreatedBy:    "mktorrent.go",
-			Info: InfoDict{
-				Name:        name,
-				PieceLength: piece_len,
-				Files:       []File{},
-			},
-			UrlList: url,
+		var t *Torrent
+		if strings.HasPrefix(url, "http") || strings.HasPrefix(url, "ftp") {
+			log.Println("Creating directory torrent")
+			t = &Torrent{
+				AnnounceList: make([][]string, 0),
+				CreationDate: time.Now().Unix(),
+				CreatedBy:    "mktorrent.go",
+				Info: InfoDict{
+					Name:        name,
+					PieceLength: piece_len,
+					Files:       []File{},
+				},
+				UrlList: url,
+			}
+		} else {
+			t = &Torrent{
+				AnnounceList: make([][]string, 0),
+				CreationDate: time.Now().Unix(),
+				CreatedBy:    "mktorrent.go",
+				Info: InfoDict{
+					Name:        name,
+					PieceLength: piece_len,
+					Files:       []File{},
+				},
+			}
 		}
 		// the outer list is tiers
 		for _, a := range ann {
 			t.AnnounceList = append(t.AnnounceList, []string{a})
 		}
 		i := 0
+		b := make([]byte, piece_len)
 		err := filepath.Walk(file,
 			func(path string, info os.FileInfo, err error) error {
-
 				if !strings.Contains(path, name+".torrent") {
 					if !info.IsDir() {
-						b := make([]byte, piece_len)
+
+						log.Println("Adding File", path, "info", info.Name())
 						r, err := os.Open(path)
 						if err != nil {
 							return err
@@ -102,34 +120,30 @@ func MakeTorrent(file string, name string, url string, ann ...string) (*Torrent,
 							i++
 						}
 						for {
-							log.Println("Adding File", path, "info", info.Name())
 							n, err := io.ReadFull(r, b)
 							if err != nil && err != io.ErrUnexpectedEOF {
 								return err
 							}
 							if err == io.ErrUnexpectedEOF {
 								b = b[:n]
-								t.Info.Files[i-1].Path = PopDir(path)
+								t.Info.Files[i-1].Path = strings.Split(path, "/") //PopDir(path)
 								t.Info.Files[i-1].Length += n
-								t.Info.Pieces += string(hashPiece(b))
-								//								t.Info.Length += n
-								//								t.Info.Files[i-1].PieceLength += piece_len
 								break
 							} else if n == piece_len {
-								t.Info.Files[i-1].Path = PopDir(path)
+								t.Info.Files[i-1].Path = strings.Split(path, "/") //PopDir(path)
 								t.Info.Files[i-1].Length += n
-								t.Info.Pieces += string(hashPiece(b))
-
-								//								t.Info.Length += n
-								//								t.Info.Files[i-1].PieceLength += piece_len
 							} else {
-								panic("short read!")
+								//t.Info.Files[i-1].Path = strings.Split(path, "/") //PopDir(path)
+								//t.Info.Files[i-1].Length += n
+								//panic("short read!")
 							}
 						}
+
 					}
 				}
 				return nil
 			})
+		t.Info.Pieces += string(hashPiece(b))
 		if err != nil {
 			return nil, err
 		}
