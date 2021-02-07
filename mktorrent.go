@@ -106,7 +106,7 @@ func MakeTorrent(file string, name string, url string, ann ...string) (*Torrent,
 		b := make([]byte, piece_len)
 		err := filepath.Walk(file,
 			func(path string, info os.FileInfo, err error) error {
-				if !strings.Contains(path, name+".torrent") {
+				if !strings.Contains(path, name+".torrent") && !strings.Contains(path, ".git"){
 					if !info.IsDir() {
 
 						log.Println("Adding File", path, "info", info.Name())
