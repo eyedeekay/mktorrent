@@ -57,7 +57,7 @@ func IsDirectory(path string) (bool, error) {
 func PopDir(path string) []string{
   a := strings.Split(path, "/")
   _, a = a[0], a[1:]
-  for _, b := a {
+  for _, b := range a {
     log.Println(b)
   }
   return a
