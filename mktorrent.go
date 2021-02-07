@@ -11,7 +11,7 @@ import (
 	"strings"
 )
 
-const piece_len = 512000
+const piece_len = 262144
 
 type File struct {
 	Path   []string `bencode:"path,omitempty"`
