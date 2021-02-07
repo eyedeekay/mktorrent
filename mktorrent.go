@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"time"
+	"strings"
 )
 
 const piece_len = 512000
@@ -79,7 +80,7 @@ func MakeTorrent(file string, name string, url string, ann ...string) (*Torrent,
 		err := filepath.Walk(file,
 			func(path string, info os.FileInfo, err error) error {
 
-				if string.Contains(path, name+".torrent") {
+				if !strings.Contains(path, name+".torrent") {
 					if !info.IsDir() {
 						b := make([]byte, piece_len)
 						r, err := os.Open(path)
