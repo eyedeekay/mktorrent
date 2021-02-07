@@ -65,7 +65,7 @@ func MakeTorrent(file string, name string, url string, ann ...string) (*Torrent,
 			CreationDate: time.Now().Unix(),
 			CreatedBy:    "mktorrent.go",
 			Info: InfoDict{
-				Name:        file,
+				Name:        name,
 				PieceLength: piece_len,
 				Files:       []File{},
 			},
@@ -79,7 +79,7 @@ func MakeTorrent(file string, name string, url string, ann ...string) (*Torrent,
 		err := filepath.Walk(file,
 			func(path string, info os.FileInfo, err error) error {
 
-				if name+".torrent" != path {
+				if string.Contains(path, name+".torrent") {
 					if !info.IsDir() {
 						b := make([]byte, piece_len)
 						r, err := os.Open(path)
@@ -99,14 +99,14 @@ func MakeTorrent(file string, name string, url string, ann ...string) (*Torrent,
 							}
 							if err == io.ErrUnexpectedEOF {
 								b = b[:n]
-								t.Info.Files[i-1].Path = filepath.SplitList(path)
+								t.Info.Files[i-1].Path = filepath.SplitList(path)[1:]
 								t.Info.Files[i-1].Length += n
 								t.Info.Pieces += string(hashPiece(b))
 								//								t.Info.Length += n
 								//								t.Info.Files[i-1].PieceLength += piece_len
 								break
 							} else if n == piece_len {
-								t.Info.Files[i-1].Path = filepath.SplitList(path)
+								t.Info.Files[i-1].Path = filepath.SplitList(path)[1:]
 								t.Info.Files[i-1].Length += n
 								t.Info.Pieces += string(hashPiece(b))
 
